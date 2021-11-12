@@ -52,7 +52,7 @@ async def tl(ctx, lang, *, to_translate = ''):
         res = translator.translate(to_translate, dest = lang)
         await ctx.send(f'{to_translate} -> {res.text}') # Outputs original and translated text
 
-
+# Settings menu
 @bot.command()
 async def settings(ctx, arg1 = '', arg2 = ''):
     global default_language
@@ -131,5 +131,5 @@ async def on_message(message):
     await message.delete()   # Deletes user command message
     await bot.process_commands(message) # Fixes on_message blocking bot.command
 
-
-bot.run('OTA2MTE3NDE2MTg5MzEzMDQ1.YYT9mg.nyiVDKWfu58VWOEngpetygeawvQ')
+token = open('token.txt', 'r').read()
+bot.run(token)
