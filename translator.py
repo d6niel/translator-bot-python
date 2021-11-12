@@ -28,7 +28,7 @@ in_settings = False
 languages = open('languages.txt', 'r')
 
 
-
+### On ready triggers ###
 @bot.event
 async def on_ready():
     
@@ -42,7 +42,7 @@ async def on_ready():
     english_channel = bot.get_channel(906156397392175154)
 
 
-# Translates text when .tl command is used
+### Translates text when .tl command is used ###
 @bot.command()
 async def tl(ctx, lang, *, to_translate = ''):
     if not lang:
@@ -52,7 +52,7 @@ async def tl(ctx, lang, *, to_translate = ''):
         res = translator.translate(to_translate, dest = lang)
         await ctx.send(f'{to_translate} -> {res.text}') # Outputs original and translated text
 
-# Settings menu
+### Settings menu ###
 @bot.command()
 async def settings(ctx, arg1 = '', arg2 = ''):
     global default_language
@@ -92,7 +92,7 @@ async def settings(ctx, arg1 = '', arg2 = ''):
     await ctx.send(embed=embed, delete_after=5)
 
 
-# List of all available languages
+### List of all available languages ###
 @bot.command()
 async def lang(ctx):
     embed.title = 'Languages'
@@ -101,7 +101,7 @@ async def lang(ctx):
     await ctx.send(embed=embed, delete_after=10)
 
 
-# List of all available commands
+### List of all available commands ###
 @bot.command()
 async def help(ctx):
 
@@ -113,7 +113,8 @@ async def help(ctx):
 
     await ctx.send(embed=embed, delete_after=10)
 
-        
+
+### On message triggers ###       
 @bot.event
 async def on_message(message):
     # Ignores messages from Bot
@@ -130,6 +131,7 @@ async def on_message(message):
 
     await message.delete()   # Deletes user command message
     await bot.process_commands(message) # Fixes on_message blocking bot.command
+
 
 token = open('token.txt', 'r').read()
 bot.run(token)
