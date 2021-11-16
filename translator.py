@@ -28,17 +28,18 @@ english_channel = None
 
 default_language = "english"
 
+auto_translation = bool()
+current_auto_translation_setting = "Off"
+
 in_settings = False
 
+# List of all languages
 languages = set()
-
 with open("languages.txt", "r") as f:
     for l in f.readlines():
         m = re.match("^(.*);(.*)", l)
         languages.add(m.group(1))
         languages.add(m.group(2))
-
-# languages = open("languages.txt", "r")
 
 
 ### On ready triggers ###
@@ -58,16 +59,15 @@ async def on_ready():
 ### Translates text when .tl command is used ###
 @bot.command()
 async def tl(ctx, lang, *, text_to_translate=""):
-    print(lang)
-    print(languages.read())
+
     # Checks if user enters langauge
-    if lang not in languages.read():
+    if lang not in languages:
         embed.description = """
                             Watch out, no translation language selected! 
                             Correct command formatting should be: *.tl "new_language" "text_to_translate*". 
                             Please type **.help formatting** if you need help with formatting.
                             """
-    if lang in languages.read():
+    elif lang in languages:
         # Translates
         res = translator.translate(text_to_translate, dest=lang)
         embed.title = "Translation"
@@ -79,7 +79,7 @@ async def tl(ctx, lang, *, text_to_translate=""):
 ### Settings menu ###
 @bot.command()
 async def settings(ctx, arg1="", arg2=""):
-    global default_language
+    global default_language, auto_translation, current_auto_translation_setting
 
     arg1 = arg1.lower()
     arg2 = arg2.lower()
@@ -87,10 +87,9 @@ async def settings(ctx, arg1="", arg2=""):
     # Default settings message
     embed.title = "Settings"
     if not arg1:
-        embed.description = """Here is a list of all available settings: 
-                            \n• Default: Changes default translating language *(Current language: {})*.""".format(
-            default_language
-        )
+        embed.description = f"""Here is a list of all available settings: 
+                            \n• **Default**: Changes default translating language *(Current language: {default_language})*.
+                            \n• **Auto**: Toggles Automatic Translation *(Current setting: {current_auto_translation_setting})*."""
     # Change default translating language
     elif arg1 == "default":
         embed.title = "Settings -> Default"
@@ -108,8 +107,21 @@ async def settings(ctx, arg1="", arg2=""):
         elif arg2 not in languages:
             embed.description = "*Language not found! For a list of all available languages please type **.lang***"
 
+    elif arg1 == "auto":
+        embed.title = "Settings -> Auto Translation"
+        if arg2 == "on":
+            auto_translation = True
+            current_auto_translation_setting = "On"
+            embed.description = "Automatic translation has been turned on."
+        elif arg2 == "off":
+            auto_translation = False
+            current_auto_translation_setting = "Off"
+            embed.description = "Automatic translation has been turned off."
+        else:
+            embed.description = "Unknown argument! This setting only has two values: on or off. Please type **.help formatting** if you need help with formatting. "
+
     # Displays error message if unknown command
-    elif arg1 != ("default"):
+    elif arg1 != ("default", "auto"):
         embed.description = """Unknown command! Here is a list of all available settings: 
                             \n• Default: Changes default translating language *(Current language: {})*. """.format(
             default_language
@@ -122,7 +134,7 @@ async def settings(ctx, arg1="", arg2=""):
 @bot.command()
 async def lang(ctx):
     embed.title = "Languages"
-    print_languages = languages.read().replace(";", " **or** ")
+    print_languages = open("languages.txt", "r").read().replace(";", " **or** ")
     embed.description = print_languages
     await ctx.send(embed=embed, delete_after=10)
 
@@ -136,15 +148,17 @@ async def help(ctx, arg1=""):
     if arg1 == "":
         embed.title = "Help"
         embed.description = """All available commands:
-                            \n• **Settings** *(.settings)*: Change all Translator Bot settings. 
+                            \n• **Settings** *(.settings)*: Change all Translator Bot settings. Type **.settings** for more info.
                             \n• **Translation** *(.tl)*: Translate any message to (almost) any language. 
                             \n• **Languages** *(.lang)*: Displays a list of all available languages.
-                            \n\n• **Formatting** *(.help formatting)*: Displays formatting and more info for every command."""
+                            \n\n**- Formatting** *(.help formatting)*: Displays formatting and more info for every command."""
 
     elif arg1 == "formatting":
         embed.title = "Help -> Formatting"
         embed.description = """Here's a list showing the correct formatting for every bot command:
-                            \n• **Settings**: *.settings default "language"*
+                            \n• **Settings**: 
+                            \n*.settings default "language"*
+                            \n*.settings auto on, .settings auto off*
                             \n• **Translation**: *.tl "new_language" "text_to_translate*" 
                             \n• **Languages**: *.lang*"""
     await ctx.send(embed=embed, delete_after=10)
@@ -170,15 +184,16 @@ async def on_message(message):
         return
 
     # Automatically translates any message from general channel to english in english channel
-    if message.channel.name == "general" and not message.content.startswith(
-        (".tl", ".settings", ".lang", ".help")
-    ):
-        res = translator.translate(message.content, dest="en")
-        embed.title = "Translation"
-        embed.description = message.content + " -> " + res.text
-        await english_channel.send(embed=embed, delete_after=5)
+    if not message.content.startswith((".tl", ".settings", ".lang", ".help")):
+        if auto_translation:
+            if message.channel.name == "general":
+                res = translator.translate(message.content, dest="en")
+                embed.title = "Translation"
+                embed.description = message.content + " -> " + res.text
+                await english_channel.send(embed=embed)
+    else:
+        await message.delete()  # Deletes messages that are commands
 
-    await message.delete()  # Deletes user command message.
     await bot.process_commands(message)  # Fixes on_message blocking bot.command
 
 
