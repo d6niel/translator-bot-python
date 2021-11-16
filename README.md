@@ -1,6 +1,5 @@
 # translator-python
-Translator Discord Bot made in Python.
-
+Simple Discord Translator Bot made in Python.
 ## Features
 - Automatic translation from and to a specific channel
 - Classic translation with automatic language detection
