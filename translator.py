@@ -1,25 +1,16 @@
 import discord
-import logging
 import re
-from discord import activity
 from discord.ext import commands
-from discord.message import Message
 from googletrans import Translator
 
-### Outputs logs to a file ###
-logger = logging.getLogger("discord")
-logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename="discord.log", encoding="utf-8", mode="w")
-handler.setFormatter(
-    logging.Formatter("%(asctime)s:%(levelname)s:%(name)s: %(message)s")
-)
-logger.addHandler(handler)
 
+# Initializes bot and sets prefix and status
 bot = commands.Bot(
     command_prefix=".", help_command=None, activity=discord.Game(name=".help | .info")
-)  # Initializes commands to a prefix
+)
 translator = Translator()  # Initializes translator function
 embed = discord.Embed()  # Initializes embed messages
+
 
 # Channel variables
 general_channel = None
@@ -33,8 +24,11 @@ current_auto_translation_setting = "Off"
 
 in_settings = False
 
+
 # List of all languages
 languages = set()
+
+# Puts all languages in a set (resets after reading unlike read() function)
 with open("languages.txt", "r") as f:
     for l in f.readlines():
         m = re.match("^(.*);(.*)", l)
@@ -58,18 +52,17 @@ async def on_ready():
 
 ### Translates text when .tl command is used ###
 @bot.command()
-async def tl(ctx, lang, *, text_to_translate=""):
+async def tl(ctx, arg1, *, text_to_translate=""):
 
     # Checks if user enters langauge
-    if lang not in languages:
+    if arg1 not in languages:
         embed.description = """
-                            Watch out, no translation language selected! 
-                            Correct command formatting should be: *.tl "new_language" "text_to_translate*". 
+                            Watch out, no translation language selected!
+                            Correct command formatting should be: *.tl "new_language" "text_to_translate"*.
                             Please type **.help formatting** if you need help with formatting.
                             """
-    elif lang in languages:
-        # Translates
-        res = translator.translate(text_to_translate, dest=lang)
+    elif arg1 in languages:
+        res = translator.translate(text_to_translate, dest=arg1)
         embed.title = "Translation"
         embed.description = f"{text_to_translate} -> {res.text}"
 
@@ -79,20 +72,24 @@ async def tl(ctx, lang, *, text_to_translate=""):
 ### Settings menu ###
 @bot.command()
 async def settings(ctx, arg1="", arg2=""):
+
     global default_language, auto_translation, current_auto_translation_setting
 
     arg1 = arg1.lower()
     arg2 = arg2.lower()
 
-    # Default settings message
+    # Default settings message with no arguments
     embed.title = "Settings"
     if not arg1:
-        embed.description = f"""Here is a list of all available settings: 
+        embed.description = f"""Here is a list of all available settings:
                             \n• **Default**: Changes default translating language *(Current language: {default_language})*.
                             \n• **Auto**: Toggles Automatic Translation *(Current setting: {current_auto_translation_setting})*."""
+
     # Change default translating language
     elif arg1 == "default":
+
         embed.title = "Settings -> Default"
+
         # Checks if the language was given by the user
         if arg2 == "":
             embed.description = "Please select the new default translating language *(For a list of all available languages type **.lang**)*"
@@ -107,22 +104,26 @@ async def settings(ctx, arg1="", arg2=""):
         elif arg2 not in languages:
             embed.description = "*Language not found! For a list of all available languages please type **.lang***"
 
+    # Toggle automatic translation
     elif arg1 == "auto":
         embed.title = "Settings -> Auto Translation"
+
         if arg2 == "on":
             auto_translation = True
             current_auto_translation_setting = "On"
             embed.description = "Automatic translation has been turned on."
+
         elif arg2 == "off":
             auto_translation = False
             current_auto_translation_setting = "Off"
             embed.description = "Automatic translation has been turned off."
+
         else:
             embed.description = "Unknown argument! This setting only has two values: on or off. Please type **.help formatting** if you need help with formatting. "
 
     # Displays error message if unknown command
     elif arg1 != ("default", "auto"):
-        embed.description = """Unknown command! Here is a list of all available settings: 
+        embed.description = """Unknown command! Here is a list of all available settings:
                             \n• Default: Changes default translating language *(Current language: {})*. """.format(
             default_language
         )
@@ -133,52 +134,66 @@ async def settings(ctx, arg1="", arg2=""):
 ### List of all available languages ###
 @bot.command()
 async def lang(ctx):
+
+    # Makes list more readable
+    print_languages = open("languages.txt", "r").read()
+    print_languages = print_languages.replace(";", " **or** ")
+
     embed.title = "Languages"
-    print_languages = open("languages.txt", "r").read().replace(";", " **or** ")
     embed.description = print_languages
+
     await ctx.send(embed=embed, delete_after=10)
 
 
 ### List of all available commands ###
-@bot.command()
+@ bot.command()
 async def help(ctx, arg1=""):
 
     arg1 = arg1.lower()
 
+    # Default help command
     if arg1 == "":
         embed.title = "Help"
+        embed.set_image(
+            url="https://images2.imgbox.com/86/6a/arq6NSfQ_o.png")
         embed.description = """All available commands:
                             \n• **Settings** *(.settings)*: Change all Translator Bot settings. Type **.settings** for more info.
-                            \n• **Translation** *(.tl)*: Translate any message to (almost) any language. 
+                            \n• **Translation** *(.tl)*: Translate any message to (almost) any language.
                             \n• **Languages** *(.lang)*: Displays a list of all available languages.
+                            \n• **Info** *(.info)*: Displays all information regarding Translator Bot.
                             \n\n**- Formatting** *(.help formatting)*: Displays formatting and more info for every command."""
 
+    # Formatting information
     elif arg1 == "formatting":
         embed.title = "Help -> Formatting"
         embed.description = """Here's a list showing the correct formatting for every bot command:
-                            \n• **Settings**: 
+                            \n• **Settings**:
                             \n*.settings default "language"*
                             \n*.settings auto on, .settings auto off*
-                            \n• **Translation**: *.tl "new_language" "text_to_translate*" 
+                            \n• **Translation**: *.tl "new_language" "text_to_translate*"
                             \n• **Languages**: *.lang*"""
+
     await ctx.send(embed=embed, delete_after=10)
+    embed.set_image(url=embed.Empty)  # Resets message image
 
 
 ### Information section ###
-@bot.command()
+@ bot.command()
 async def info(ctx):
 
     embed.title = "Translator Bot Info"
-    embed.set_image(url="https://i.lensdump.com/i/g7wchF.png")
+    embed.set_image(url="https://images2.imgbox.com/ff/fc/Eqxh9Idv_o.png")
     embed.description = """For help type .help or .help formatting.
-                        \nFollow the bot's development on GitHub: https://github.com/d6niel/translator-python."""
+                        \nFollow the bot's development on GitHub: https://github.com/d6niel/translator-bot-python."""
 
     await ctx.send(embed=embed, delete_after=10)
+    embed.set_image(url=embed.Empty)  # Resets message image
 
 
 ### On message triggers ###
-@bot.event
+@ bot.event
 async def on_message(message):
+
     # Ignores messages from Bot
     if message.author == bot.user:
         return
@@ -194,7 +209,8 @@ async def on_message(message):
     else:
         await message.delete()  # Deletes messages that are commands
 
-    await bot.process_commands(message)  # Fixes on_message blocking bot.command
+    # Fixes on_message blocking bot.command
+    await bot.process_commands(message)
 
 
 token = open("token.txt", "r").read()
