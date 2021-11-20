@@ -59,6 +59,6 @@ target/
 
 imgs/
 
-token.txt
+..env
 test.py
 .DS_Store

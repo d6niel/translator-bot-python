@@ -1,4 +1,5 @@
 import discord
+import os
 import re
 from discord.ext import commands
 from googletrans import Translator
@@ -213,5 +214,5 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-token = open("token.txt", "r").read()
+token = os.environ.get('TOKEN')
 bot.run(token)
